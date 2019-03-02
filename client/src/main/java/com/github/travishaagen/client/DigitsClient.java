@@ -63,7 +63,7 @@ public class DigitsClient
     /**
      * Reusable buffer of nine digit characters
      */
-    private final char[] digits = new char[9];
+    private final byte[] digits = new byte[9];
 
     /**
      * Constructor
@@ -138,7 +138,7 @@ public class DigitsClient
         // copy digits
         for (int i = 0; i < digitsLength; ++i) {
             // strip off high order bits from char, because we don't need them
-            buf.writeByte((byte) digits[i]);
+            buf.writeByte(digits[i]);
         }
 
         // newline

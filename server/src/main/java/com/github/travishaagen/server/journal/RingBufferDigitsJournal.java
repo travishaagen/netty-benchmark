@@ -1,11 +1,11 @@
 package com.github.travishaagen.server.journal;
 
-import com.lmax.disruptor.*;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 import com.github.travishaagen.server.StatisticsPrinter;
 import com.github.travishaagen.server.filter.ByteBufferDigitsFilter;
 import com.github.travishaagen.server.filter.DigitsFilter;
+import com.lmax.disruptor.*;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +21,7 @@ import java.util.concurrent.Executors;
  * LMAX Disruptor ring-buffer, for multiple writer threads and a single consumer thread. The ring-buffer pre-allocates
  * {@code byte[]} instances that are used for the duration.
  */
-public class RingBufferDigitsJournal implements DigitsJournal
-{
+public class RingBufferDigitsJournal implements DigitsJournal {
     private static final Logger LOGGER = LoggerFactory.getLogger(RingBufferDigitsJournal.class);
 
     private final Disruptor<byte[]> disruptor;
@@ -40,40 +39,30 @@ public class RingBufferDigitsJournal implements DigitsJournal
      * @param file              journal file
      */
     public RingBufferDigitsJournal(final int ringBufferSize, final String waitStrategy, final boolean singleWriter,
-                                   final StatisticsPrinter statisticsPrinter, final File file)
-    {
-        disruptor = new Disruptor<byte[]>(
-                new EventFactory<byte[]>()
-                {
-                    @Override
-                    public byte[] newInstance()
-                    {
-                        // create a byte array that will occupy a permanent space in the ring buffer
-                        return new byte[DIGITS_BYTE_COUNT];
-                    }
+                                   final StatisticsPrinter statisticsPrinter, final File file) {
+        disruptor = new Disruptor<>(
+                () -> {
+                    // create a byte array that will occupy a permanent space in the ring buffer
+                    return new byte[DIGITS_BYTE_COUNT];
                 }, ringBufferSize, Executors.newCachedThreadPool(),
                 singleWriter ? ProducerType.SINGLE : ProducerType.MULTI,
                 createDisruptorWaitStrategy(waitStrategy)
         );
 
         // log disruptor exceptions
-        disruptor.handleExceptionsWith(new ExceptionHandler()
-        {
+        disruptor.handleExceptionsWith(new ExceptionHandler() {
             @Override
-            public void handleOnStartException(final Throwable t)
-            {
+            public void handleOnStartException(final Throwable t) {
                 LOGGER.error("Disruptor exception during startup.", t);
             }
 
             @Override
-            public void handleOnShutdownException(final Throwable t)
-            {
+            public void handleOnShutdownException(final Throwable t) {
                 LOGGER.error("Disruptor exception during shutdown.", t);
             }
 
             @Override
-            public void handleEventException(final Throwable t, final long sequence, final Object event)
-            {
+            public void handleEventException(final Throwable t, final long sequence, final Object event) {
                 LOGGER.error(event.toString(), t);
             }
         });
@@ -84,8 +73,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
     }
 
     @Override
-    public void write(final ByteBuf buf)
-    {
+    public void write(final ByteBuf buf) {
         // copy bytes into ring-buffer slot and publish it
         final long sequence = ringBuffer.next();
         try {
@@ -97,8 +85,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         disruptor.shutdown();
         try {
             consumer.shutDown();
@@ -118,8 +105,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
      *
      * @return new {@code WaitStrategy} instance
      */
-    private WaitStrategy createDisruptorWaitStrategy(final String waitStrategy)
-    {
+    private WaitStrategy createDisruptorWaitStrategy(final String waitStrategy) {
         if ("Sleep".equalsIgnoreCase(waitStrategy)) {
             return new SleepingWaitStrategy();
         } else if ("Yield".equalsIgnoreCase(waitStrategy)) {
@@ -136,8 +122,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
     /**
      * Single-threaded consumer of digits-messages from the ring-buffer, which writes unique values to a journal-file.
      */
-    private static class RingBufferConsumer implements EventHandler<byte[]>
-    {
+    private static class RingBufferConsumer implements EventHandler<byte[]> {
         private static final byte NEWLINE_CHAR_BYTE = '\n';
 
         private final DigitsFilter digitsFilter;
@@ -153,8 +138,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
          * @param statisticsPrinter statistics printer
          * @param file              journal file
          */
-        private RingBufferConsumer(final StatisticsPrinter statisticsPrinter, final File file)
-        {
+        private RingBufferConsumer(final StatisticsPrinter statisticsPrinter, final File file) {
             this.statisticsPrinter = statisticsPrinter;
             try {
                 fileOutputStream = new BufferedOutputStream(new FileOutputStream(file), 8192);
@@ -165,8 +149,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
         }
 
         @Override
-        public void onEvent(final byte[] bytes, final long sequence, final boolean endOfBatch) throws Exception
-        {
+        public void onEvent(final byte[] bytes, final long sequence, final boolean endOfBatch) throws Exception {
             if (!digitsFilter.isUnique(bytes)) {
                 // found duplicate, so update stat
                 ++duplicates;
@@ -185,8 +168,7 @@ public class RingBufferDigitsJournal implements DigitsJournal
             }
         }
 
-        public void shutDown() throws Exception
-        {
+        public void shutDown() throws Exception {
             // closing the file will also flush its buffer to disk
             fileOutputStream.close();
         }

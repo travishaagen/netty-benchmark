@@ -21,7 +21,7 @@ public class DigitsClientMessageHandler extends ChannelInboundHandlerAdapter
      */
     public DigitsClientMessageHandler()
     {
-        outboundQueue = new ConcurrentLinkedQueue<ByteBuf>();
+        outboundQueue = new ConcurrentLinkedQueue<>();
     }
 
     /**

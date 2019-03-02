@@ -60,7 +60,7 @@ To install and run the server, execute the following commands in the root projec
     mvn clean install
 
     java -server -Xms1024m -Xmx1024m \
-      -cp server/target/lib/*:server/target/server-1.0-SNAPSHOT.jar \
+      -cp server/target/lib/*:server/target/server-1.1-SNAPSHOT.jar \
       com.github.travishaagen.server.DigitsServer
 
 You can optionally specify an alternate port and/or directory to save the numbers.log file to, using the following JVM arguments,
@@ -75,10 +75,10 @@ For load testing, the busy-wait strategy is the most efficient for consuming mes
 A load-test client can be run on one or more separate machines with the following, where 127.0.0.1 should be replaced
 with the server's hostname or IP address,
 
-    java -Xms256m -Xms256m -cp client/target/lib/*:client-1.0-SNSHOT.jar \
+    java -Xms256m -Xms256m -cp client/target/lib/*:client/target/client-1.1-SNAPSHOT.jar \
       com.github.travishaagen.client.DigitsClient 127.0.0.1
 
 To test maximum performance possible, this load test sends the same message repeatedly and has a much tighter event-loop code path,
 
-    java -Xms256m -Xms256m -cp client/target/lib/*:client-1.0-SNSHOT.jar \
+    java -Xms256m -Xms256m -cp client/target/lib/*:client/target/client-1.1-SNAPSHOT.jar \
       com.github.travishaagen.client.LoadTestApp 127.0.0.1

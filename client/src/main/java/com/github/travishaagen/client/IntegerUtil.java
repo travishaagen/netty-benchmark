@@ -17,7 +17,7 @@ public final class IntegerUtil
     static {
         try {
             // use reflection to access a hidden Integer method called "getChars"
-            GET_CHARS_METHOD = Integer.class.getDeclaredMethod("getChars", int.class, int.class, char[].class);
+            GET_CHARS_METHOD = Integer.class.getDeclaredMethod("getChars", int.class, int.class, byte[].class);
             GET_CHARS_METHOD.setAccessible(true);
         } catch (Exception e) {
             throw new RuntimeException("Unable to reflect on Integer methods", e);
@@ -54,7 +54,7 @@ public final class IntegerUtil
      * @return length of buffer that was filled
      * @throws java.lang.IllegalArgumentException if {@code buf} was too small to hold characters
      */
-    public static int toUnicodeChars(final int i, final char[] buf)
+    public static int toUnicodeChars(final int i, final byte[] buf)
     {
         final int size = (i < 0) ? digitCount(-i) + 1 : digitCount(i);
         if (size > buf.length) {
@@ -62,9 +62,7 @@ public final class IntegerUtil
         }
         try {
             GET_CHARS_METHOD.invoke(null, i, size, buf);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException("unexpected exception", e);
-        } catch (IllegalAccessException e) {
+        } catch (InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException("unexpected exception", e);
         }
         return size;

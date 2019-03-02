@@ -15,21 +15,17 @@ import org.junit.runner.RunWith;
  * Unit tests for {@link DigitsServerMessageHandler}.
  */
 @RunWith(EasyMockRunner.class)
-public class DigitsServerMessageHandlerTest
-{
+public class DigitsServerMessageHandlerTest {
     private static final char LINE_SEPARATOR = '\n';
 
-    private DigitsJournal journalMock = new DigitsJournal()
-    {
+    private DigitsJournal journalMock = new DigitsJournal() {
         @Override
-        public void write(ByteBuf buf)
-        {
+        public void write(ByteBuf buf) {
             buf.skipBytes(DIGITS_BYTE_COUNT);
         }
 
         @Override
-        public void shutdown()
-        {
+        public void shutdown() {
             // does nothing
         }
     };
@@ -42,8 +38,7 @@ public class DigitsServerMessageHandlerTest
      * {@link DigitsServerMessageHandler#handleMessage(io.netty.channel.ChannelHandlerContext, io.netty.buffer.ByteBuf)}
      */
     @Test
-    public void handleMessageTests()
-    {
+    public void handleMessageTests() {
         final DigitsServerMessageHandler messageHandler = new DigitsServerMessageHandler(journalMock);
 
         // read one valid command

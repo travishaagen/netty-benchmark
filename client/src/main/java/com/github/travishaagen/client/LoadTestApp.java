@@ -12,12 +12,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Load test app that sends the same digits-message repeatedly, as fast as possible.
  */
-public class LoadTestApp
-{
+public class LoadTestApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadTestApp.class);
 
-    private LoadTestApp()
-    {
+    private LoadTestApp() {
         // empty
     }
 
@@ -27,8 +25,7 @@ public class LoadTestApp
      * @param args first argument is the hostname or IP address
      * @throws Exception
      */
-    public static void main(final String[] args) throws Exception
-    {
+    public static void main(final String[] args) throws Exception {
         if (args.length == 0) {
             System.out.println("Must provide hostname argument");
             return;
@@ -43,37 +40,24 @@ public class LoadTestApp
         final EventLoopGroup group = new NioEventLoopGroup(availableProcessors);
         final Bootstrap bootstrap = new Bootstrap();
         bootstrap.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
-        bootstrap.option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024);
-        bootstrap.option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 16 * 1024);
+        bootstrap.option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 16 * 1024));
         bootstrap.option(ChannelOption.SO_SNDBUF, 16 * 1024);
         bootstrap.option(ChannelOption.SO_RCVBUF, 16 * 1024);
         bootstrap.option(ChannelOption.WRITE_SPIN_COUNT, 32);
         bootstrap.option(ChannelOption.TCP_NODELAY, true);
-        bootstrap.group(group)
-                .channel(NioSocketChannel.class)
-                .option(ChannelOption.TCP_NODELAY, true)
-                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .handler(new ChannelInitializer<SocketChannel>()
-                {
-                    @Override
-                    protected void initChannel(final SocketChannel ch) throws Exception
-                    {
-                        ch.pipeline().addLast(channelHandler);
-                    }
-                });
+        bootstrap.group(group);
+        bootstrap.channel(NioSocketChannel.class);
+        bootstrap.option(ChannelOption.TCP_NODELAY, true);
+        bootstrap.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(final SocketChannel ch) throws Exception {
+                ch.pipeline().addLast(channelHandler);
+            }
+        });
 
         // create shutdown hook for this factory's connections
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        group.shutdownGracefully();
-                    }
-                }, "shutdownHook"
-        ));
-
+        Runtime.getRuntime().addShutdownHook(new Thread(group::shutdownGracefully, "shutdownHook"));
 
         for (int i = availableProcessors - 2; i > -1; --i) {
             bootstrap.connect(host, 4000).sync().channel();

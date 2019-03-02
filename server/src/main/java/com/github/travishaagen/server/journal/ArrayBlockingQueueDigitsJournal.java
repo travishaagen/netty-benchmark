@@ -1,9 +1,9 @@
 package com.github.travishaagen.server.journal;
 
-import com.google.common.util.concurrent.AbstractScheduledService;
 import com.github.travishaagen.server.StatisticsPrinter;
 import com.github.travishaagen.server.filter.ByteBufferDigitsFilter;
 import com.github.travishaagen.server.filter.DigitsFilter;
+import com.google.common.util.concurrent.AbstractScheduledService;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +24,7 @@ import java.util.concurrent.TimeUnit;
  * <b>not</b> pool {@code byte[]} instances that are added to the queue, and {@code byte[]} references are
  * drained into a buffer once every millisecond.
  */
-public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
-{
+public class ArrayBlockingQueueDigitsJournal implements DigitsJournal {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrayBlockingQueueDigitsJournal.class);
     private static final int CONSUMER_SLEEP_DURATION_MS = 1;
     private static final int MAX_BATCH_SIZE = 1024 * 8;
@@ -40,16 +39,14 @@ public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
      * @param statisticsPrinter statistics printer
      * @param file              journal file
      */
-    public ArrayBlockingQueueDigitsJournal(final int maxQueueSize, final StatisticsPrinter statisticsPrinter, final File file)
-    {
-        queue = new ArrayBlockingQueue<byte[]>(maxQueueSize);
+    public ArrayBlockingQueueDigitsJournal(final int maxQueueSize, final StatisticsPrinter statisticsPrinter, final File file) {
+        queue = new ArrayBlockingQueue<>(maxQueueSize);
         consumer = new QueueConsumer(MAX_BATCH_SIZE, queue, statisticsPrinter, file);
         consumer.startAsync();
     }
 
     @Override
-    public void write(final ByteBuf buf)
-    {
+    public void write(final ByteBuf buf) {
         final byte[] bytes = new byte[DIGITS_BYTE_COUNT];
         buf.readBytes(bytes, 0, DIGITS_BYTE_COUNT);
         try {
@@ -61,8 +58,7 @@ public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
     }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         consumer.stopAsync();
     }
 
@@ -70,8 +66,7 @@ public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
      * Single-threaded queue consumer that reads from message queue in batches, and writes unique digits-messages to
      * a journal-file.
      */
-    private static class QueueConsumer extends AbstractScheduledService
-    {
+    private static class QueueConsumer extends AbstractScheduledService {
         private static final byte NEWLINE_CHAR_BYTE = '\n';
 
         private final DigitsFilter digitsFilter;
@@ -90,12 +85,11 @@ public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
          * @param file              journal file
          */
         private QueueConsumer(final int maxBatchSize, final BlockingQueue<byte[]> queue,
-                              final StatisticsPrinter statisticsPrinter, final File file)
-        {
+                              final StatisticsPrinter statisticsPrinter, final File file) {
             this.queue = queue;
             this.statisticsPrinter = statisticsPrinter;
             this.maxBatchSize = maxBatchSize;
-            batch = new ArrayList<byte[]>(maxBatchSize);
+            batch = new ArrayList<>(maxBatchSize);
             try {
                 fileOutputStream = new BufferedOutputStream(new FileOutputStream(file), 8192);
             } catch (FileNotFoundException e) {
@@ -105,8 +99,7 @@ public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
         }
 
         @Override
-        protected void runOneIteration() throws Exception
-        {
+        protected void runOneIteration() throws Exception {
             // copy batch from queue
             queue.drainTo(batch, maxBatchSize);
             if (!batch.isEmpty()) {
@@ -138,14 +131,12 @@ public class ArrayBlockingQueueDigitsJournal implements DigitsJournal
         }
 
         @Override
-        protected Scheduler scheduler()
-        {
+        protected Scheduler scheduler() {
             return Scheduler.newFixedRateSchedule(0, CONSUMER_SLEEP_DURATION_MS, TimeUnit.MILLISECONDS);
         }
 
         @Override
-        protected void shutDown() throws Exception
-        {
+        protected void shutDown() throws Exception {
             // closing the file will also flush its buffer to disk
             fileOutputStream.close();
         }

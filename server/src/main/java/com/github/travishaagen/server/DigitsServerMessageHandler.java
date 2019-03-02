@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBufProcessor;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ByteProcessor;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
@@ -14,8 +15,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Server-side handler for <em>digits</em> messages.
  */
-public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
-{
+public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(DigitsServerMessageHandler.class);
 
     /**
@@ -63,14 +63,12 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
      *
      * @param journal digits journal, for persisting unique digits to disk
      */
-    public DigitsServerMessageHandler(final DigitsJournal journal)
-    {
+    public DigitsServerMessageHandler(final DigitsJournal journal) {
         this.journal = journal;
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception
-    {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         try {
             final ByteBuf buf = (ByteBuf) msg;
             if (buf.readableBytes() != 0) {
@@ -107,8 +105,7 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
      * @throws InvalidMessageException  client sent invalid message and should be disconnected
      */
     protected void handleMessage(final ChannelHandlerContext ctx, final ByteBuf buf)
-            throws TerminateServerException, InvalidMessageException
-    {
+            throws TerminateServerException, InvalidMessageException {
         // index of last matched character (may not have been a full line match)
         int index;
         while (buf.readableBytes() != 0) {
@@ -142,14 +139,12 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) throws Exception
-    {
+    public void channelReadComplete(final ChannelHandlerContext ctx) throws Exception {
         ctx.flush();
     }
 
     @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception
-    {
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
         if (cause instanceof TerminateServerException) {
             // trigger server shutdown-hook
             System.exit(0);
@@ -163,8 +158,7 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception
-    {
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
         singleFrameBuf.release();
     }
@@ -172,16 +166,14 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
     /**
      * Matches one line of nine digits followed by platform specific newline characters.
      */
-    private static class DigitLineProcessor implements ByteBufProcessor
-    {
+    private static class DigitLineProcessor implements ByteBufProcessor {
         /**
          * Number of characters processed
          */
         private int charCount;
 
         @Override
-        public boolean process(final byte value) throws Exception
-        {
+        public boolean process(final byte value) throws Exception {
             if (charCount < MESSAGE_DIGIT_COUNT) {
                 // still have digits to match
                 if (value >= ZERO_CHAR_BYTE && value <= NINE_CHAR_BYTE) {
@@ -198,8 +190,7 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
         /**
          * Resets state of this class so that it can be reused.
          */
-        public void reset()
-        {
+        public void reset() {
             charCount = 0;
         }
     }
@@ -208,16 +199,14 @@ public class DigitsServerMessageHandler extends ChannelInboundHandlerAdapter
      * Matches the string "terminate" followed by platform specific newline characters, which is used to
      * signal that the server should shutdown completely.
      */
-    private static class TerminateLineProcessor implements ByteBufProcessor
-    {
+    private static class TerminateLineProcessor implements ByteProcessor {
         /**
          * Index within terminate-string
          */
         private int index;
 
         @Override
-        public boolean process(final byte value) throws Exception
-        {
+        public boolean process(final byte value) throws Exception {
             if (index < TERMINATE_BYTES.length && TERMINATE_BYTES[index] == value) {
                 ++index;
                 return index < TERMINATE_BYTES.length;

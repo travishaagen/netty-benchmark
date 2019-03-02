@@ -5,8 +5,7 @@ package com.github.travishaagen.server.filter;
  * Only one instance of this class should be created per application (singleton), because of high memory usage, and it
  * is <b>not</b> thread-safe.
  */
-public class ByteArrayDigitsFilter implements DigitsFilter
-{
+public class ByteArrayDigitsFilter implements DigitsFilter {
     /**
      * Since we will only receive up to 9 digits, there are 1 billion unique possible integers, and we can map
      * those values to 125,000,000 bytes (8 bits each), so it is possible to keep track of which values we have
@@ -21,8 +20,7 @@ public class ByteArrayDigitsFilter implements DigitsFilter
      * @param bytes nine digits
      * @return {@code true} if value is unique and was added to the lookup-table, and {@code false} otherwise
      */
-    public boolean isUnique(final byte[] bytes)
-    {
+    public boolean isUnique(final byte[] bytes) {
         // convert bytes to a single integer value (See http://stackoverflow.com/a/10578427)
         int value = 0;
         int digit, j, k;

@@ -7,6 +7,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -46,8 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <li>Block</li>
  * </ul>
  */
-public class DigitsServer
-{
+public class DigitsServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(DigitsServer.class);
 
     /**
@@ -107,8 +107,7 @@ public class DigitsServer
     /**
      * Runs the server event-loop.
      */
-    public void run()
-    {
+    public void run() {
         LOGGER.info("Starting server on port {} with {} threaded event-loop", PORT,
                 SINGLE_THREADED_EVENT_LOOP ? "single" : "multi");
 
@@ -123,16 +122,7 @@ public class DigitsServer
         statisticsPrinter = new StatisticsPrinter();
 
         // can trigger shutdown-hook by killing server process from command-line
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        shutdownGracefully();
-                    }
-                }, "shutdownHook"
-        ));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownGracefully, "shutdownHook"));
 
         try {
             // start printing statistics
@@ -149,22 +139,19 @@ public class DigitsServer
 
             // initialize server and bind to port
             final ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.option(ChannelOption.SO_SNDBUF, 16 * 1024);
-            bootstrap.option(ChannelOption.SO_RCVBUF, 16 * 1024);
-            bootstrap.group(acceptorGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-                    .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 16 * 1024)
-                    .childHandler(new ChannelInitializer<SocketChannel>()
-                    {
-                        @Override
-                        public void initChannel(final SocketChannel ch) throws Exception
-                        {
-                            // processes messages
-                            ch.pipeline().addLast(new DigitsServerMessageHandler(journal));
-                        }
-                    });
+            bootstrap.group(acceptorGroup, workerGroup);
+            bootstrap.channel(NioServerSocketChannel.class);
+            bootstrap.childOption(ChannelOption.SO_SNDBUF, 16 * 1024);
+            bootstrap.childOption(ChannelOption.SO_RCVBUF, 16 * 1024);
+            bootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+            bootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 16 * 1024));
+            bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                public void initChannel(final SocketChannel ch) throws Exception {
+                    // processes messages
+                    ch.pipeline().addLast(new DigitsServerMessageHandler(journal));
+                }
+            });
             bootstrap.bind(PORT).sync().channel().closeFuture().sync();
         } catch (Exception e) {
             LOGGER.error("Unable to start server", e);
@@ -178,8 +165,7 @@ public class DigitsServer
      * @param args
      * @throws Exception
      */
-    public static void main(final String[] args) throws Exception
-    {
+    public static void main(final String[] args) throws Exception {
         // start server event-loop
         new DigitsServer().run();
     }
@@ -187,8 +173,7 @@ public class DigitsServer
     /**
      * Shuts the server down gracefully, by closing sockets and releasing resources.
      */
-    public void shutdownGracefully()
-    {
+    public void shutdownGracefully() {
         if (shutdownFlag.compareAndSet(false, true)) {
             acceptorGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();

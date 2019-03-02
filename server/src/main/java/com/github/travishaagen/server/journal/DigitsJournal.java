@@ -6,8 +6,7 @@ import io.netty.buffer.ByteBuf;
  * Interface for a digits-message journal implementation, that queues messages from multiple threads and writes
  * unique values to a journal-file.
  */
-public interface DigitsJournal
-{
+public interface DigitsJournal {
     /**
      * Number of bytes for a digits message.
      */

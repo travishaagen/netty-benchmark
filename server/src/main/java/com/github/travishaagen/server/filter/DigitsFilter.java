@@ -3,8 +3,7 @@ package com.github.travishaagen.server.filter;
 /**
  * Tracks the uniqueness of nine-digit numbers as they are passed into this data structure.
  */
-public interface DigitsFilter
-{
+public interface DigitsFilter {
     /**
      * Converts nine digits into an integer and then determines if it is a unique value.
      *

@@ -5,6 +5,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -27,19 +28,14 @@ public class DigitsClientFactory
      */
     private static final String DEFAULT_HOST = "localhost";
 
-    private static final List<EventLoopGroup> groups = new ArrayList<EventLoopGroup>();
+    private static final List<EventLoopGroup> groups = new ArrayList<>();
 
     static {
         // create shutdown hook for this factory's connections
         Runtime.getRuntime().addShutdownHook(new Thread(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        for (final EventLoopGroup group : groups) {
-                            group.shutdownGracefully();
-                        }
+                () -> {
+                    for (final EventLoopGroup group : groups) {
+                        group.shutdownGracefully();
                     }
                 }, "shutdownHook"
         ));
@@ -81,22 +77,19 @@ public class DigitsClientFactory
             }
             final Bootstrap bootstrap = new Bootstrap();
             bootstrap.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
-            bootstrap.option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024);
-            bootstrap.option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 16 * 1024);
+            bootstrap.option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 16 * 1024));
             bootstrap.option(ChannelOption.SO_SNDBUF, 16 * 1024);
             bootstrap.option(ChannelOption.SO_RCVBUF, 16 * 1024);
             bootstrap.option(ChannelOption.WRITE_SPIN_COUNT, 32);
             bootstrap.option(ChannelOption.TCP_NODELAY, true);
-            bootstrap.group(group)
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<SocketChannel>()
-                    {
-                        @Override
-                        protected void initChannel(final SocketChannel ch) throws Exception
-                        {
-                            ch.pipeline().addLast(new DigitsClientMessageHandler());
-                        }
-                    });
+            bootstrap.group(group);
+            bootstrap.channel(NioSocketChannel.class);
+            bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(final SocketChannel ch) throws Exception {
+                    ch.pipeline().addLast(new DigitsClientMessageHandler());
+                }
+            });
             return new DigitsClient(bootstrap.connect(host, port).sync().channel());
         } catch (Exception e) {
             throw new DigitsClientException("Unable to connect", e);
